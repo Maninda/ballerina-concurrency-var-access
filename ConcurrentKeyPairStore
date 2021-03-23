@@ -1,0 +1,73 @@
+import ballerina/io;
+
+type Coordinates record {|
+    decimal latitude;
+    decimal longitude;
+|};
+
+// Central key-value store shared between packages
+isolated map<record {}> records = {};
+
+
+isolated function add(string key, record {} coordinates) {
+    lock {
+        if records.hasKey(key) {
+            io:println("Already exist the city, ", key);
+            return;
+        }
+
+        map<record {}> updatedrecords = records.clone();
+        updatedrecords[key] = coordinates.clone();
+        records = updatedrecords.clone();
+    }
+
+    io:println("Added records for ", key);
+}
+
+isolated function get(string key) returns record {}? {
+    lock {
+        if !records.hasKey(key) {
+            io:println("Does not exist the key, ", key);
+            return;
+        }
+        return records[key].clone();
+    }
+}
+
+isolated function update(string key, record {} coordinates) {
+    lock {
+        if !records.hasKey(key) {
+            io:println("Does not exist the key, ", key);
+            return;
+        }
+        map<record {}> updatedrecords = records.clone();
+        _ = updatedrecords.remove(key);
+        updatedrecords[key] = coordinates.clone();
+        records = updatedrecords.clone();
+    }
+}
+
+isolated function remove(string key) {
+    lock {
+        if !records.hasKey(key) {
+            io:println("Does not exist the key, ", key);
+            return;
+        }
+        map<record {}> updatedrecords = records.clone();
+        _ = updatedrecords.remove(key);
+        records = updatedrecords.clone();
+    }
+}
+
+public function main() {
+    add("Colombo", {"latitude": 6.9271, "longitude": 79.8612});
+    add("Kandy", {"latitude": 7.2906, "longitude": 80.6337});
+    add("Galle", {"latitude": 4, "longitude": 5});
+    remove("Colombo");
+    update("Galle", {"latitude": 6, "longitude": 7});
+
+    // io:println(getAllCoordinates());
+    io:println("Colombo", get("Colombo"));
+    io:println("Kandy", get("Kandy"));
+    io:println("Galle", get("Galle"));
+}
